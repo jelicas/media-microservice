@@ -1,7 +1,6 @@
-import { RequestHandler } from "express";
+import { RequestHandler } from 'express';
 
-import { IncomingForm, Files } from "formidable";
-import { resolve } from "path";
+import { mediaService } from '../services/mediaService';
 
 interface IMediaController {
   upload: RequestHandler;
@@ -11,37 +10,26 @@ interface IMediaController {
 export const mediaController: IMediaController = {
   async upload(req, res) {
     try {
-      const form = new IncomingForm();
-      form.multiples = false;
-      form.uploadDir = resolve("files");
-      form.keepExtensions = true;
-
-      const { image }: Files = await new Promise((resolve, reject) => {
-        form.parse(req, (err, fields, files) => {
-          if (err) {
-            return reject(err);
-          }
-          return resolve(files);
-        });
-      });
+      const { image } = await mediaService.processUpload(req);
 
       return res.status(200).send({ filePath: image.path });
     } catch (error) {
-      console.error(error);
       return res
         .status(error.status || 500)
-        .send({ message: error.message || "Internal Server Error" });
+        .send({ message: error.message || 'Internal Server Error' });
     }
   },
   getMedia(req, res) {
     try {
-      const path = req.query.path?.toString()!;
+      const { id } = req.params;
+      const path = __dirname.replace('src/controllers', `files/${id}`);
+
       return res.sendFile(path);
     } catch (error) {
       console.error(error);
       return res
         .status(error.status || 500)
-        .send({ message: error.message || "Internal Server Error" });
+        .send({ message: error.message || 'Internal Server Error' });
     }
   },
 };
